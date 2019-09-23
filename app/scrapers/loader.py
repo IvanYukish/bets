@@ -5,8 +5,8 @@ from urllib.parse import urlencode
 from app import options
 
 from aiohttp import ClientSession, DummyCookieJar
-from app.scraper.utils import prepare_post_data
-from app.scraper.serializers import serialize_list
+from app.scrapers.utils import prepare_post_data
+from app.scrapers.serializers import serialize_list
 from asyncio import ensure_future
 
 
