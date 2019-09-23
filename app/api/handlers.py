@@ -4,6 +4,7 @@ from aiohttp.abc import Request
 
 import app.scrapers
 from app.options import CORS
+from app.scrapers.bazabet.soccer import SoccerScrapper
 
 __all__ = ["main_handler"]
 
@@ -26,6 +27,7 @@ def cors_headers(f):
 async def main_handler(request: Request):
     data = {
         "bookmaker": request.match_info["bookmaker"],
-        "game_type": request.match_info["game_type"]
+        "game_type": request.match_info["game_type"],
+        "games": await SoccerScrapper().parse()
     }
     return web.json_response(data=data, status=200)
