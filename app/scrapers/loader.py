@@ -2,7 +2,7 @@ from ujson import loads
 from json import JSONDecodeError
 from urllib.parse import urlencode
 
-from app import options
+from app import settings
 
 from aiohttp import ClientSession, DummyCookieJar
 from app.scrapers.utils import prepare_post_data
@@ -28,13 +28,13 @@ async def load_page(url=None, method='GET', body=None):
 
     """
     if not url:
-        url = options.SCHEDULE_URL
+        url = settings.SCHEDULE_URL
     async with _session.request(url=url,
                                 method=method,
                                 data=body) as response:
         raw_response_body = await response.content.read()
 
-        return raw_response_body.decode(options.BASE_ENCODING)
+        return raw_response_body.decode(settings.BASE_ENCODING)
 
 
 async def load_schedule(**kwargs):
@@ -61,7 +61,7 @@ async def lazy_loader(redis, query, teachers=False):
     else:
         objects_list = await _load_teachers_or_groups(teachers=teachers)
         await redis.set(key, serialize_list(objects_list))
-        ensure_future(redis.expire(key, options.CACHE_PERIOD))
+        ensure_future(redis.expire(key, settings.CACHE_PERIOD))
     return [item for item in objects_list if query in item.lower()]
 
 
@@ -79,9 +79,9 @@ async def _load_teachers_or_groups(query='', faculty='0', teachers=False):
 
     """
     if teachers:
-        api_code = options.TEACHERS_API_CODE
+        api_code = settings.TEACHERS_API_CODE
     else:
-        api_code = options.GROUPS_API_CODE
+        api_code = settings.GROUPS_API_CODE
 
     params = {
         'n': 701,
@@ -90,7 +90,7 @@ async def _load_teachers_or_groups(query='', faculty='0', teachers=False):
         'query': query,
     }
 
-    url = options.AJAX_URL + urlencode(params)
+    url = settings.AJAX_URL + urlencode(params)
     decoded_response = await load_page(url=url)
 
     # if not teachers:

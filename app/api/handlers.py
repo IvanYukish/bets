@@ -3,8 +3,8 @@ from aiohttp import web
 from aiohttp.abc import Request
 
 import app.scrapers
-from app.options import CORS
-from app.scrapers.bazabet.soccer import SoccerScrapper
+from app.settings import CORS, allowed_scrappers
+from app.scrapers.bazabet.soccer import BazabetSoccerScrapper
 
 __all__ = ["main_handler"]
 
@@ -25,9 +25,15 @@ def cors_headers(f):
 
 @cors_headers
 async def main_handler(request: Request):
+    bookmaker = request.match_info["bookmaker"]
+    game_type = request.match_info["game_type"]
+    try:
+        scrapper = allowed_scrappers[bookmaker][game_type]()
+    except KeyError:
+        return web.json_response(data={"error": "Not found"}, status=404)
     data = {
-        "bookmaker": request.match_info["bookmaker"],
-        "game_type": request.match_info["game_type"],
-        "games": await SoccerScrapper().parse()
+        "bookmaker": bookmaker,
+        "game_type": game_type,
+        "games": await scrapper.parse()
     }
     return web.json_response(data=data, status=200)

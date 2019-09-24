@@ -1,31 +1,36 @@
+import json
+from itertools import chain
+
 import aiohttp
 
 from app.scrapers.base import BaseScrapper
-from app.scrapers.bazabet.settings import soccer_url, basket_url, tennis_url
+from app.scrapers.bazabet.settings import soccer_url, search_coffs
 
 
-class SoccerScrapper(BaseScrapper):
+class BazabetSoccerScrapper(BaseScrapper):
     def _clear_data(self, data: dict) -> list:
+        all_games = list(chain(*data.values()))
         result = []
-        all_games = []
-        for k, v in data.items():
-            for match in v:
-                if "t" in match:
-                    all_games.append(match)
-                    events = []
-                    some = list(match["t"].values())
-                    for s in some:
-                        for coff in s:
-                            if coff["n"] in ["1", "2", "X", "1X", "X2", "12"]:
-                                events.append({coff["n"]: coff["v"]})
-                    result.append({
-                        "name": match["n"],
-                        "events": events
-                    })
+        for game in all_games:
+            if "t" in game:
+                coffs = []
+                for cof in chain(*game["t"].values()):
+                    if cof["n"] in search_coffs:
+                        coffs.append({cof["n"]: cof["v"]})
+                if coffs:
+                    result.append(
+                        {
+                            "name": game["n"],
+                            "events": coffs,
+                        }
+                    )
+
         return result
 
     async def parse(self) -> list:
         async with aiohttp.client.ClientSession() as session:
-            async with session.get(tennis_url) as resp:
+            async with session.get(soccer_url) as resp:
+                with open("templ.json", 'w') as f:
+                    json.dump(await resp.json(), f)
                 data = self._clear_data(await resp.json())
         return data

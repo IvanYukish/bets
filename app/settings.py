@@ -1,3 +1,5 @@
+from app.scrapers.bazabet.soccer import BazabetSoccerScrapper
+
 APP_PORT = 8085
 
 SECRET = "ABCDEFG!@#$%#"
@@ -6,6 +8,12 @@ DEBUG = False
 
 SCHEDULE_URL = "http://asu.pnu.edu.ua/cgi-bin/timetable.cgi?n=700"
 AJAX_URL = "http://asu.pnu.edu.ua/cgi-bin/timetable.cgi?"
+
+allowed_scrappers = {
+    "bazabet": {
+        "soccer": BazabetSoccerScrapper
+    }
+}
 
 TEACHERS_API_CODE = "141"
 GROUPS_API_CODE = "142"

@@ -1,5 +1,5 @@
 from aiohttp import web
-from app import options
+from app import settings
 from app.api.routes import routes
 
 
@@ -9,10 +9,10 @@ async def _make_app(*args, **kwargs):
 
     :return Application:
     """
-    app = web.Application(debug=options.DEBUG)
+    app = web.Application(debug=settings.DEBUG)
     app.router.add_routes(routes)
     return app
 
 
 def run():
-    web.run_app(_make_app(), port=options.APP_PORT)
+    web.run_app(_make_app(), port=settings.APP_PORT)

@@ -1,4 +1,4 @@
-from app import options
+from app import settings
 
 
 __all__ = ["prepare_post_data", ]
@@ -18,10 +18,10 @@ def prepare_post_data(**kwargs):
 
     post_data = {
         'faculty': faculty,
-        'teacher': teacher.encode(options.BASE_ENCODING),
-        'group': group.encode(options.BASE_ENCODING),
-        'sdate': sdate.encode(options.BASE_ENCODING),
-        'edate': edate.encode(options.BASE_ENCODING),
+        'teacher': teacher.encode(settings.BASE_ENCODING),
+        'group': group.encode(settings.BASE_ENCODING),
+        'sdate': sdate.encode(settings.BASE_ENCODING),
+        'edate': edate.encode(settings.BASE_ENCODING),
         'n': 700
     }
 
