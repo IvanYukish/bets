@@ -2,9 +2,7 @@ import functools
 from aiohttp import web
 from aiohttp.abc import Request
 
-import app.scrapers
-from app.settings import CORS, allowed_scrappers
-from app.scrapers.bazabet.soccer import BazabetSoccerScrapper
+from app.options import CORS
 
 __all__ = ["main_handler"]
 
