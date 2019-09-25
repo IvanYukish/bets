@@ -1,3 +1,7 @@
-class BaseScrapper:
+from abc import abstractmethod, ABC
+
+
+class BaseScrapper(ABC):
+    @abstractmethod
     def parse(self):
-        raise NotImplementedError
+        pass

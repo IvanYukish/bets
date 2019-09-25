@@ -1,4 +1,5 @@
 from app.scrapers.bazabet.soccer import BazabetSoccerScrapper
+from app.scrapers.bazabet.tennis import BazabetTennisScrapper
 
 APP_PORT = 8085
 
@@ -11,14 +12,10 @@ AJAX_URL = "http://asu.pnu.edu.ua/cgi-bin/timetable.cgi?"
 
 allowed_scrappers = {
     "bazabet": {
-        "soccer": BazabetSoccerScrapper
+        "soccer": BazabetSoccerScrapper,
+        "tennis": BazabetTennisScrapper,
     }
 }
-
-TEACHERS_API_CODE = "141"
-GROUPS_API_CODE = "142"
-
-BASE_ENCODING = "cp1251"
 
 CONNECTION_TIMEOUT = 1.5
 REQUEST_TIMEOUT = 1.5
