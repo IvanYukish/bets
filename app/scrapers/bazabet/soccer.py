@@ -13,24 +13,27 @@ class BazabetSoccerScrapper(BaseScrapper):
         result = []
         for game in all_games:
             if "t" in game:
-                coffs = []
+                coffs = {}
                 for cof in chain(*game["t"].values()):
                     if cof["n"] in search_coffs:
-                        coffs.append({cof["n"]: cof["v"]})
-                if coffs:
-                    result.append(
-                        {
-                            "name": game["n"],
-                            "events": coffs,
-                        }
-                    )
-
+                        coffs[cof["n"]] = cof["v"]
+                        if coffs:
+                            result.append(
+                                {
+                                    "name": game["n"],
+                                    "events": coffs,
+                                }
+                            )
         return result
 
     async def parse(self) -> list:
         async with aiohttp.client.ClientSession() as session:
             async with session.get(soccer_url) as resp:
                 with open("templ.json", 'w') as f:
-                    json.dump(await resp.json(), f)
+                    try:
+                        json.dump(await resp.json(content_type=None), f)
+                    except Exception:
+                        print(resp.text())
+                        raise
                 data = self._clear_data(await resp.json())
         return data

@@ -2,7 +2,7 @@ import functools
 from aiohttp import web
 from aiohttp.abc import Request
 
-from app.options import CORS
+from app.settings import CORS, allowed_scrappers
 
 __all__ = ["main_handler"]
 

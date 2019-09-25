@@ -10,7 +10,9 @@ class SoccerScrapper(BaseScrapper):
     def _get_sport_ids(self, body, sport):
         soup = BeautifulSoup(body, 'lxml')
         form_field = soup.find('div', id='lobbySportsHolder')
-        data_rows = form_field.find_all('li')[sports[sport]].find('ul', class_="hidden groups").find_all('li')
+        data_rows = form_field.find_all('li')[sports[sport]].find('ul',
+                                                                  class_="hidden groups").find_all(
+            'li')
         if sport == 'football':
             data_rows = data_rows[1:]
         ids = []
@@ -34,32 +36,38 @@ class SoccerScrapper(BaseScrapper):
                 try:
                     cells = row.find_all('td')
                 except Exception as e:
-                    print(e)
                     b = True
                     break
                 if len(cells) == 17:
-                    name = ''.join(cells[2].find_all(text=True))
-                    events = [
-                        {"1": ''.join(cells[8].find_all(text=True))},
-                        {"X": ''.join(cells[9].find_all(text=True))},
-                        {"2": ''.join(cells[10].find_all(text=True)).replace('\n', '')},
-                        {"1X": ''.join(cells[11].find_all(text=True))},
-                        {"12": ''.join(cells[12].find_all(text=True))},
-                        {"X2": ''.join(cells[13].find_all(text=True)).replace('\n', '')},
-                    ]
+                    name = ' - '.join(cells[2].find_all(text=True))
+                    events = {
+                        "1": ''.join(cells[8].find_all(text=True)).strip(),
+                        "X": ''.join(cells[9].find_all(text=True)).strip(),
+                        "2": ''.join(cells[10].find_all(text=True)).replace(
+                            '\n', '').strip(),
+                        "1X": ''.join(cells[11].find_all(text=True)).strip(),
+                        "12": ''.join(cells[12].find_all(text=True)).strip(),
+                        "X2": ''.join(cells[13].find_all(
+                            text=True)).replace('\n', '').strip(),
+                    }
+                    cleaned_events = {}
+                    for key, value in events.items():
+                        try:
+                            cleaned_events[key] = float(value)
+                        except Exception:
+                            pass
                     to_add = dict(name=name,
-                                  events=events)
-                    print(to_add)
+                                  events=cleaned_events)
                     odds.append(to_add)
-        print(len(odds))
         return odds
 
     def _parse(self, body):
         soup = BeautifulSoup(body, 'lxml')
-        tables = soup.find('div', id='oddsList').find('form', id='f1').find_all('div', class_="container gray")
+        tables = soup.find('div', id='oddsList').find('form',
+                                                      id='f1').find_all('div',
+                                                                        class_="container gray")
         trs = [*[t.find_all('tr', class_='bk') for t in tables[1:]]]
         all_odds = self._format(trs)
-        print(len(all_odds))
         return all_odds
 
     async def _load(self, url):
@@ -73,7 +81,5 @@ class SoccerScrapper(BaseScrapper):
         ids = self._get_sport_ids(resp_body, 'football')
         url = self._create_url(ids)
         main_body = await self._load(url)
-        l = self._parse(main_body)
-        print(l)
-        return l
-
+        result = self._parse(main_body)
+        return result
