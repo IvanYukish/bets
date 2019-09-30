@@ -1,5 +1,5 @@
-from app.scrapers.bazabet.soccer import BazabetSoccerScrapper, \
-    BazabetTennisScrapper
+from app.scrapers.bazabet.soccer import BazabetSoccerScrapper
+from app.scrapers.bazabet.tennis import BazabetTennisScrapper
 from app.scrapers.parimatch.soccer import SoccerScrapper
 
 APP_PORT = 8085
