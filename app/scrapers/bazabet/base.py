@@ -1,4 +1,4 @@
-from asyncio import gather, create_task
+from asyncio import gather
 from datetime import datetime
 from itertools import chain
 
@@ -32,8 +32,8 @@ class BazabetBaseScrapper(BaseScrapper):
     def _get_games_id(raw_data: dict) -> list:
         return [game["id"] for game in chain(*raw_data.values())]
 
-    async def _parse_simple(
-            self, item_id: int, session: ClientSession) -> dict:
+    async def _parse_simple(self, item_id: int,
+                            session: ClientSession) -> dict:
         async with session.get(self.detail_url.format(item_id)) as resp:
             return await resp.json()
 
@@ -44,7 +44,8 @@ class BazabetBaseScrapper(BaseScrapper):
 
         return await gather(*tasks)
 
-    def _parse_event(self, event: dict) -> list:
+    @staticmethod
+    def _parse_event(event: dict) -> list:
         res = []
         for events in event.values():
             for event in events:
@@ -61,7 +62,7 @@ class BazabetBaseScrapper(BaseScrapper):
                 res.append(ev)
         return res
 
-    async def _cleared_data(self, parsed_games: list):
+    def _cleared_data(self, parsed_games: list):
         result = []
         for game in parsed_games:
             if "t" in game:
@@ -83,5 +84,5 @@ class BazabetBaseScrapper(BaseScrapper):
         async with ClientSession() as session:
             async with session.get(self._game_type_url) as resp:
                 data = await self._parse_all(await resp.json(), session)
-                s = await self._cleared_data(data)
+                s = self._cleared_data(data)
         return s

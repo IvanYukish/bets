@@ -1,6 +1,7 @@
 from app.scrapers.bazabet.soccer import BazabetSoccerScrapper
 from app.scrapers.bazabet.tennis import BazabetTennisScrapper
 from app.scrapers.parimatch.soccer import SoccerScrapper
+from app.scrapers.favorit.kinf_of_sports import class_factory
 
 APP_PORT = 8085
 
@@ -15,7 +16,9 @@ allowed_scrappers = {
     },
     "parimatch": {
         "soccer": SoccerScrapper
-    }
+    },
+
+    "favorit": class_factory()
 }
 
 CONNECTION_TIMEOUT = 1.5
