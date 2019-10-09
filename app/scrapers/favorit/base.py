@@ -41,7 +41,7 @@ class FavoritBaseScrapper(BaseScrapper):
             'game_type': parsed_games[0]["sport_name"],
         }
 
-        for i, game in enumerate(parsed_games):
+        for game in parsed_games:
             url = self.generate_url(game)
             match_detail = requests.post(url.base_url, url.url_params).json()
             name = game['event_name']

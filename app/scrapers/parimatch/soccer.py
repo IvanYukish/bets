@@ -7,7 +7,8 @@ from urllib.parse import urlencode
 
 class SoccerScrapper(BaseScrapper):
 
-    def _get_sport_ids(self, body, sport):
+    @staticmethod
+    def _get_sport_ids(body, sport):
         soup = BeautifulSoup(body, 'lxml')
         form_field = soup.find('div', id='lobbySportsHolder')
         data_rows = form_field.find_all('li')[sports[sport]].find('ul',
@@ -21,12 +22,14 @@ class SoccerScrapper(BaseScrapper):
             ids.append(i)
         return ids
 
-    def _create_url(self, ids):
+    @staticmethod
+    def _create_url(ids):
         params = {'hd': ','.join(ids)}
         url = soccer_url + '?' + urlencode(params)
         return url
 
-    def _format(self, all_odds):
+    @staticmethod
+    def _format(all_odds):
         odds = []
         b = False
         for trs in all_odds:
