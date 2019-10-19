@@ -1,6 +1,7 @@
-import json
+import asyncio
+from asyncio import gather
 
-import requests
+from aiohttp import ClientSession
 
 from app.scrapers.base import BaseScrapper
 from app.scrapers.favorit.settings import match_id, service_id, method, \
@@ -14,12 +15,26 @@ class FavoritBaseScrapper(BaseScrapper):
 
     game_id = None
 
+    async def _post(self, params: dict, session: ClientSession):
+        async with session.post(self.url, json=params) as response:
+            return await response.json(content_type='text')
+
+    async def gather_posts(self, params: list, session: ClientSession):
+        tasks = []
+        for param in params:
+            task = asyncio.ensure_future(self._post(param, session))
+            tasks.append(task)
+
+        return await gather(*tasks)
+
     async def parse(self) -> list:
-        with requests.post(self.url,
-                           json=self._generate_params_data_url()) as resp:
-            data = resp.json()['result']
-            s = self._cleared_data(data)
-        return s
+        async with ClientSession() as session:
+            resp = await self.gather_posts(
+                await self._generate_params_data_url(session),
+                session)
+            s = self._cleared_data(resp, session)
+
+        return await s
 
     @property
     def _game_type_url(self) -> dict:
@@ -37,65 +52,73 @@ class FavoritBaseScrapper(BaseScrapper):
 
         return params
 
-    def _generate_category_id(self) -> list:
-        resp = requests.post(self.url, json=self._game_type_url).json()
+    async def _generate_category_id(self, session: ClientSession) -> list:
+        lst_params = []
+        resp = await self._post(self._game_type_url, session)
+        for elem in resp['result']:
+            params = {"jsonrpc": "2.0", "method": "frontend/event/get",
+                      "params": {"by": {"service_id": 0, "lang": "en",
+                                        "category_id": elem[
+                                            'category_id']},
+                                 "count": ["tournament_id"]}, "id": 1099}
+            lst_params.append(params)
+        return lst_params
 
-        return [elem['category_id'] for elem in resp['result']]
+    async def _generate_tournaments_id(self, session: ClientSession) -> list:
 
-    def _generate_tournament_id(self) -> list:
-
-        params = {"jsonrpc": "2.0", "method": "frontend/event/get",
-                  "params": {"by": {"service_id": 0, "lang": "en",
-                                    "category_id": None},
-                             "count": ["tournament_id"]}, "id": 1099}
         tour_lst = []
-        for i, category_id in enumerate(self._generate_category_id()):
-            params['params']['by']['category_id'] = category_id
-            resp = requests.post(self.url, json=params).json()
+        resp_lst = await self.gather_posts(
+            await self._generate_category_id(session), session)
+
+        for resp in resp_lst:
             for j in range(len(resp['result'])):
                 tour_lst.append(resp['result'][j]['tournament_id'])
         return tour_lst
 
-    def _generate_params_data_url(self) -> dict:
+    async def _generate_params_data_url(self, session: ClientSession) -> list:
+        lst_param = []
+        for tour in await self._generate_tournaments_id(session):
+            params = {"jsonrpc": "2.0", "method": "frontend/event/get",
+                      "params": {
+                          "by": {"lang": "en", "service_id": 0,
+                                 "tournament_id": {
+                                     "$in": [tour]},
+                                 "head_markets": True}},
+                      "id": 8021}
 
-        params = {"jsonrpc": "2.0", "method": "frontend/event/get", "params": {
-            "by": {"lang": "en", "service_id": 0,
-                   "tournament_id": {"$in": self._generate_tournament_id()},
-                   "head_markets": True}},
-                  "id": 8021}
-
-        return params
+            lst_param.append(params)
+        return lst_param
 
     @staticmethod
     def _generate_params(game) -> dict:
+        event_id = game['result'][0]["event_id"]
+        param = {'jsonrpc': jsonrpc, 'method': method,
+                 'params': {'by': {'lang': lang,
+                                   'service_id': service_id,
+                                   'event_id': event_id}},
+                 'id': match_id}
 
-        event_id = game["event_id"]
-        url_params = json.dumps({'jsonrpc': jsonrpc, 'method': method,
-                                 'params': {'by': {'lang': lang,
-                                                   'service_id': service_id,
-                                                   'event_id': event_id}},
-                                 'id': match_id})
+        return param
 
-        url = url_params
+    async def _cleared_data(self, parsed_games: list,
+                            session: ClientSession) -> list:
 
-        return url
-
-    def _cleared_data(self, parsed_games: list) -> list:
-        res = []
+        res = params = []
         api = {
             'bookmaker': 'favorit',
-            'game_type': parsed_games[0]["sport_name"],
+            'game_type': parsed_games[0]['result'][0]["sport_name"],
         }
-
         for game in parsed_games:
-            params = self._generate_params(game)
-            match_detail = requests.post(self.url, params).json()
+            params.append(self._generate_params(game))
+        matches_detail = await self.gather_posts(params, session)
+
+        for game in matches_detail:
             name = game['event_name']
 
             api['games'] = {
                 'name': name,
                 'date': game["event_dt"],
-                'events': self._parse_event(match_detail)
+                'events': self._parse_event(matches_detail)
             }
 
             res.append(api['games'])
