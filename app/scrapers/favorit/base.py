@@ -1,4 +1,5 @@
 import asyncio
+import time
 from asyncio import gather
 
 from aiohttp import ClientSession
@@ -24,7 +25,6 @@ class FavoritBaseScrapper(BaseScrapper):
         for param in params:
             task = asyncio.ensure_future(self._post(param, session))
             tasks.append(task)
-
         return await gather(*tasks)
 
     async def parse(self) -> list:
@@ -34,7 +34,7 @@ class FavoritBaseScrapper(BaseScrapper):
                 session)
             s = self._cleared_data(resp, session)
 
-        return await s
+            return await s
 
     @property
     def _game_type_url(self) -> dict:
@@ -91,7 +91,7 @@ class FavoritBaseScrapper(BaseScrapper):
 
     @staticmethod
     def _generate_params(game) -> dict:
-        event_id = game['result'][0]["event_id"]
+        event_id = game["event_id"]
         param = {'jsonrpc': jsonrpc, 'method': method,
                  'params': {'by': {'lang': lang,
                                    'service_id': service_id,
@@ -102,26 +102,31 @@ class FavoritBaseScrapper(BaseScrapper):
 
     async def _cleared_data(self, parsed_games: list,
                             session: ClientSession) -> list:
-
-        res = params = []
+        res = []
+        params = []
         api = {
             'bookmaker': 'favorit',
             'game_type': parsed_games[0]['result'][0]["sport_name"],
         }
-        for game in parsed_games:
-            params.append(self._generate_params(game))
+        for tour in parsed_games:
+            for game in tour['result']:
+                params.append(self._generate_params(game))
+
         matches_detail = await self.gather_posts(params, session)
 
-        for game in matches_detail:
-            name = game['event_name']
+        count = 0
+        for tour in parsed_games:
+            for game in tour['result']:
+                name = game['event_name']
 
-            api['games'] = {
-                'name': name,
-                'date': game["event_dt"],
-                'events': self._parse_event(matches_detail)
-            }
+                api['games'] = {
+                    'name': name,
+                    'date': game['event_dt'],
+                    'events': self._parse_event(matches_detail[count])
+                }
+                count += 1
+                res.append(api['games'])
 
-            res.append(api['games'])
         return res
 
     @staticmethod
