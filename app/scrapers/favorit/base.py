@@ -1,5 +1,4 @@
 import asyncio
-import time
 from asyncio import gather
 
 from aiohttp import ClientSession
