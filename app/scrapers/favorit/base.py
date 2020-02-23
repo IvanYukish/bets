@@ -51,7 +51,7 @@ class FavoritBaseScrapper(BaseScrapper):
 
         return params
 
-    async def _generate_category_id(self, session: ClientSession) -> list:
+    async def _generate_categories_id(self, session: ClientSession) -> list:
         lst_params = []
         resp = await self._post(self._game_type_url, session)
         for elem in resp['result']:
@@ -67,7 +67,7 @@ class FavoritBaseScrapper(BaseScrapper):
 
         tour_lst = []
         resp_lst = await self.gather_posts(
-            await self._generate_category_id(session), session)
+            await self._generate_categories_id(session), session)
 
         for resp in resp_lst:
             for j in range(len(resp['result'])):
@@ -117,15 +117,15 @@ class FavoritBaseScrapper(BaseScrapper):
         for tour in parsed_games:
             for game in tour['result']:
                 name = game['event_name']
-
-                api['games'] = {
-                    'name': name,
-                    'date': game['event_dt'],
-                    'events': self._parse_event(matches_detail[count])
-                }
+                if self._parse_event(matches_detail[count]):
+                    api['games'] = {
+                        'name': name,
+                        'date': game['event_dt'],
+                        'events': self._parse_event(matches_detail[count])
+                        }
+                    res.append(api['games'])
                 count += 1
-                res.append(api['games'])
-
+        res = sorted(res, key=lambda a:a['date'])
         return res
 
     @staticmethod

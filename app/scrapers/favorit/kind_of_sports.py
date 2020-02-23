@@ -2,7 +2,7 @@ from .settings import kinds_of_sport
 from .base import FavoritBaseScrapper
 
 
-def class_factory() -> dict:
+def favorit_class_factory() -> dict:
     """create dict of classes for callback since handler"""
 
     class_table = {}

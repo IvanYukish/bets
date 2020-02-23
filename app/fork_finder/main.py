@@ -1,17 +1,20 @@
-sample_data = {
-    "coefficients": {
-        "1": 1.19,
-        "X2": 6.60
-    }
-}
-
-
 def find_fork(data: dict) -> dict:
+    """
+
+    :param data:
+        sample_data = {
+            "coefficients": {
+                "1": 1.19,
+                "X2": 6.60
+            }
+        }
+    :return:
+    """
     profit = .0
     for val in data["coefficients"]:
         profit += 1 / data["coefficients"][val]
 
-    if profit >= 1:
+    if profit >= 1 or profit <= 0.85:
         raise Exception
     data["result"] = {
         "profit": 100 - (profit * 100)
