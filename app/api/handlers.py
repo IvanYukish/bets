@@ -4,7 +4,9 @@ from aiohttp.abc import Request
 
 from app.settings import CORS, allowed_scrappers
 
-__all__ = ["main_handler"]
+__all__ = ["main_handler", "matcher_handler"]
+
+from app.utils import get_matcher
 
 
 def cors_headers(f):
@@ -33,5 +35,22 @@ async def main_handler(request: Request):
         "bookmaker": bookmaker,
         "game_type": game_type,
         "games": await scrapper.parse()
+    }
+    return web.json_response(data=data, status=200)
+
+
+@cors_headers
+async def matcher_handler(request: Request):
+    bookmaker_first = request.match_info["bookmaker_first"]
+    bookmaker_second = request.match_info["bookmaker_second"]
+    game_type = request.match_info["game_type"]
+    try:
+        matcher = await get_matcher(bookmaker_first, bookmaker_second, game_type)
+    except KeyError:
+        return web.json_response(data={"error": "Not found"}, status=404)
+    data = {
+        "bookmakers": f'{bookmaker_first}-{bookmaker_second}',
+        "game_type": game_type,
+        "games": matcher.parse()
     }
     return web.json_response(data=data, status=200)

@@ -47,3 +47,7 @@ kinds_of_sport = {
     "crossfit_games": 180,
     "gaelic_football": 183,
 }
+
+
+
+# OPPOSITE_COEFFICIENTS = [('1', '2'),('2', '1'),(),()]

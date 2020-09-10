@@ -1,13 +1,11 @@
 import asyncio
 from asyncio import gather
-from time import time
 
 from aiohttp import ClientSession
 
 import logging
 from app.scrapers.base import BaseScrapper
 from app.scrapers.melbet.settings import kind_of_sports, change_event_name, lstT
-
 
 from app.utils import split_list
 
@@ -16,6 +14,7 @@ class MelbetBaseScrapper(BaseScrapper):
     # base_url = 'https://1xbetua.com'
     base_url = 'https://melbet.com'
     base_param = '/LineFeed/GetSportsZip?lng=en&champs=0&partner=8&tf=1000000000&cyberFlag=2'
+    tournaments_list = []
 
     game_id = None
 
@@ -32,7 +31,7 @@ class MelbetBaseScrapper(BaseScrapper):
         for param in params:
             task = asyncio.ensure_future(self._get(param, session))
             tasks.append(task)
-        # print(len(tasks))
+        print(len(tasks))
         return await gather(*tasks)
 
     async def get_tournaments_id(self, session: ClientSession):
@@ -52,12 +51,13 @@ class MelbetBaseScrapper(BaseScrapper):
 
     async def get_matches_ids(self, session: ClientSession):
         lst_ids = list()
-        # tournaments = await self.gather_gets(await self.get_tournaments_param(session), session)
         tournaments_params = await self.get_tournaments_param(session)
-        tournaments_chunk = split_list(tournaments_params, 30)
+        tournaments_chunk = split_list(tournaments_params, 15)
         tournaments = []
         for tour in tournaments_chunk:
             tournaments.extend(await self.gather_gets(tour, session))
+
+        self.tournaments_list = tournaments
 
         for matches in tournaments:
             for match in matches['Value']['G']:
@@ -79,31 +79,59 @@ class MelbetBaseScrapper(BaseScrapper):
         matches = []
         for match in matches_chunk:
             matches.extend(await self.gather_gets(match, session))
-            # print(time())
         return matches
 
     async def parse(self):
         async with ClientSession() as session:
-            return await self.cleared_data(session)
+            return await self.cleared_match_data(session)
 
-    async def cleared_data(self, session: ClientSession):
+    def get_match_url(self, match_id: int):
+        match_by_tournament = {}
+        for tournament in self.tournaments_list:
+            for match in tournament['Value']['G']:
+                if match_by_tournament.get(tournament['Value']['LI']):
+                    match_by_tournament[tournament['Value']['LI']].append(match['CI'])
+                else:
+                    match_by_tournament[tournament['Value']['LI']] = [match['CI']]
+
+        tour_id = self.get_tournament_id_by_match_id(match_id, match_by_tournament)
+        match_type = self.tournaments_list[0]["Value"]["SN"].lower().replace(" ", "-")
+
+        return f'https://melbet.com/en/line/{match_type}/{tour_id}/{match_id}/'
+
+    @staticmethod
+    def get_tournament_id_by_match_id(val, match_by_tournament):
+        for key, values in match_by_tournament.items():
+            for value in values:
+                if val == value:
+                    return key
+
+    async def cleared_match_data(self, session: ClientSession):
         api = []
 
-        for i, match in enumerate(await self.get_matches(session)):
+        for match in await self.get_matches(session):
             try:
-                name = f'{match["Value"]["O1"]} - {match["Value"]["O2"]}'
+                name = self.clear_event_name(f'{match["Value"]["O1"]} || {match["Value"]["O2"]}')
                 date = match["Value"]["S"]
                 events = match["Value"]["E"]
                 api.append({
                     'name': name,
                     'date': date,
+                    'url': self.get_match_url(match["Value"]['CI']),
                     'events': self.get_event(events),
                 })
-            except KeyError:
+            except (TypeError, KeyError):
                 logging.warning('match_error')
-                logging.info('match_id = ', match["Value"]["CI"])
+                # logging.info('match_id = ', match["Value"]["CI"])
         api = sorted(api, key=lambda data: data['date'])
         return api
+
+    @staticmethod
+    def clear_event_name(event_name: str):
+        new_name = event_name.replace('-', ' ').replace('.', ' ').replace('/', ' ')
+        new_name_without_letters = ' '.join([chunk for chunk in new_name.split() if len(chunk) > 1])
+
+        return new_name_without_letters
 
     @staticmethod
     def get_markets(event_d: dict):

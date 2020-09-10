@@ -1,0 +1,1 @@
+DATE_RANGE = 21600 # 6 hours

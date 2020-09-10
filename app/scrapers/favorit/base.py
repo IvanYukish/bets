@@ -103,10 +103,8 @@ class FavoritBaseScrapper(BaseScrapper):
                             session: ClientSession) -> list:
         res = []
         params = []
-        api = {
-            'bookmaker': 'favorit',
-            'game_type': parsed_games[0]['result'][0]["sport_name"],
-        }
+        api = {}
+
         for tour in parsed_games:
             for game in tour['result']:
                 params.append(self._generate_params(game))
@@ -116,17 +114,26 @@ class FavoritBaseScrapper(BaseScrapper):
         count = 0
         for tour in parsed_games:
             for game in tour['result']:
-                name = game['event_name']
+                name = self.clear_event_name(game['event_name'])
                 if self._parse_event(matches_detail[count]):
                     api['games'] = {
                         'name': name,
                         'date': game['event_dt'],
+                        'url': f'https://m.favorit.com.ua/en/bets/#event={game["head_markets"][0]["event_id"]}',
                         'events': self._parse_event(matches_detail[count])
-                        }
+                    }
                     res.append(api['games'])
                 count += 1
-        res = sorted(res, key=lambda a:a['date'])
+        res = sorted(res, key=lambda a: a['date'])
         return res
+
+    @staticmethod
+    def clear_event_name(event_name: str):
+        new_name = event_name.replace(' - ', '||').replace('||', ' || ') \
+            .replace('-', ' ').replace('.', ' ').replace('/', ' ')
+        new_name_without_letters = ' '.join([chunk for chunk in new_name.split() if len(chunk) > 1])
+
+        return new_name_without_letters
 
     @staticmethod
     def _parse_event(event: dict) -> dict:
